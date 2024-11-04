@@ -1,11 +1,12 @@
 "use strict"; //エラー防止用
 
 const	FONT			= "48px monospace";	//	使用フォント
+const	PLAYER_VEROCITY	= 0.5;				//	プレイヤーの速度
 
 let		gFrame			= 0;				//	内部カウンタ
 
-var		mouseX;								//	マウスポインタのx座標
-var		mouseY;								//	マウスポインタのy座標
+var		mouseX			= null;				//	マウスポインタのx座標
+var		mouseY			= null;				//	マウスポインタのy座標
 
 var		angle			= 0;				//	中心点からマウスポインタへ向かう傾きから得る偏角
 
@@ -14,102 +15,22 @@ let		g;
 
 const	imgScale		= 3;				//	全画像の拡大率
 
-let		map;
+let		mapImg;								//	マップの画像
+var		mapX			= 0;
+var		mapY			= 0;
 
 const	mapImgSize		= 12;				//	縦横それぞれ12ピクセルで1ブロック
 var		mapArray		= [];
 const	mapWidth		= 100;				//	マップの横幅
 const	mapHeight		= 100;				//	マップの縦幅
 
-let		player;
+let		playerImg;							//	プレイヤーの画像
+var		playerX			= 0;
+var		playerY			= 0;
 
 const	playerImgSize	= 20;				//	縦横それぞれ20ピクセル
 
 var		playersCanvas	= [];				//	各プレイヤーのキャンバスの配列
-
-class imgBase {
-	
-	//	画像
-	#img;
-	
-	//	位置
-	#x;
-	#y;
-	
-	//	画像の縦横幅
-	#width;
-	#height;
-
-	/*
-		[in]	src	:	画像ファイルのファイルパス
-		[in]	w	:	画像の横幅
-		[in]	h	:	画像の縦幅
-	*/
-	constructor(src, w, h) {
-		
-		this.img		= new Image();
-		this.img.src	= src;
-		
-		this.x			= 0;
-		this.y			= 0;
-		
-		this.width		= w;
-		this.height		= h;
-		
-	}
-	
-	GetImg() {
-		
-		return this.img;
-		
-	}
-	
-	GetX() {
-		
-		return this.x + this.width / 2;
-		
-	}
-	GetY() {
-		
-		return this.y + this.height / 2;
-		
-	}
-	
-	GetWidth() {
-		
-		return this.width;
-		
-	}
-	GetHeight() {
-		
-		return this.height;
-		
-	}
-	
-	SetX(_x) {
-		
-		this.x = _x - this.width / 2;
-		
-	}
-	SetY(_y) {
-		
-		this.y = _y - this.height / 2;
-		
-	}
-	
-}
-
-class Map extends imgBase {
-	
-	
-	
-}
-
-class Player extends imgBase {
-	
-	
-	
-}
 
 function makeMap() {
 	
@@ -139,11 +60,14 @@ function drawMap() {
 			const xCutBlock		= blockId * mapImgSize;
 			const yCutBlock		= blockId * mapImgSize;
 			
-			const xDrawBlock	= x * mapImgSize * imgScale;
-			const yDrawBlock	= y * mapImgSize * imgScale;
+			const cx			= -playerX + x;
+			const cy			= -playerY + y;
+			
+			const xDrawBlock	= cx * mapImgSize * imgScale;
+			const yDrawBlock	= cy * mapImgSize * imgScale;
 			
 			g.drawImage(
-				map.GetImg(),
+				mapImg,
 				xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
 				xDrawBlock, yDrawBlock, mapImgSize * imgScale, mapImgSize * imgScale				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
 			);
@@ -167,19 +91,33 @@ function drawPlayer() {
 	
 	rot(-angle);													//	前回の処理によるcanvasの回転角を0に初期化
 	
-	//	偏角がx軸正方向との成す角で用意したプレイヤー画像が上向きゆえPI / 2を足す必要がある
-	angle = Math.atan2( mouseY - canvas.height / 2, mouseX - canvas.width / 2 ) + Math.PI / 2;
+	if (mouseX == null || mouseY == null) {
+		angle = Math.PI / 2;
+	}
+	else {
+		angle = Math.atan2( mouseY - canvas.height / 2, mouseX - canvas.width / 2 );
+	}
+	
+	var newx	= playerX + PLAYER_VEROCITY * Math.cos(angle);
+	var newy	= playerY + PLAYER_VEROCITY * Math.sin(angle);
+	
+	console.log("x : " + angle);
+	
+	playerX		= playerX + PLAYER_VEROCITY * Math.cos(angle);
+	playerY		= playerY + PLAYER_VEROCITY * Math.sin(angle);
 	
 	//	前描画データのクリア
 	ctx.clearRect(
-		-player.GetWidth() / 2 * imgScale, -player.GetHeight() / 2 * imgScale,
+		-playerImgSize / 2 * imgScale, -playerImgSize / 2 * imgScale,
 		canvas.width, canvas.height
 	);
 	
+	//	偏角がx軸正方向との成す角で用意したプレイヤー画像が上向きゆえPI / 2を足す必要がある
+	angle += Math.PI / 2;
 	rot(angle);
 	
 	//	プレイヤー画像の描画
-	ctx.drawImage( player.GetImg(), canvas.width / 2 - player.GetWidth() / 2 * imgScale, canvas.height / 2 - player.GetHeight() / 2 * imgScale, playerImgSize * imgScale, playerImgSize * imgScale );
+	ctx.drawImage( playerImg, canvas.width / 2 - playerImgSize / 2 * imgScale, canvas.height / 2 - playerImgSize / 2 * imgScale, playerImgSize * imgScale, playerImgSize * imgScale );
 	
 }
 
@@ -189,8 +127,10 @@ function WmTimer(){
 	gFrame++;						//内部カウンタを加算
 	//console.log(gFrame);
 	
-	drawMap();
 	drawPlayer();
+	drawMap();
+	
+	g.fillText("player point : (" + playerX + ", " + playerY + ")", 10, 10);
 	
 	//console.log("plater point : (x, y) = (" + player.GetX() + ", " + player.GetY() + ")");
 	
@@ -208,7 +148,8 @@ window.onload = function() {
 	g				= canvas.getContext( "2d" );			//	2D描画コンテキストを取得
 	g.imageSmoothingEnabled = g.msImageSmoothingEnabled	= 0;	//	ドットをくっきり表示させる
 	
-	map				= new Map("img/tiles.png", mapImgSize, mapImgSize);
+	mapImg			= new Image();
+	mapImg.src		= "img/tiles.png";
 	
 	playersCanvas.push( document.createElement( 'canvas' ) );	//	メインプレイヤー用のキャンバスの作成
 	playersCanvas[0].width	= window.innerWidth;
@@ -225,12 +166,16 @@ window.onload = function() {
 	
 	document.body.appendChild(playersCanvas[0]);
 	
-	player					= new Player("img/player.png", playerImgSize, playerImgSize);
+	playerImg		= new Image();
+	playerImg.src	= "img/player.png";
+	
+	playerX			= 0;
+	playerY			= 0;
 	
 	makeMap();										//	マップデータの生成
 	
 	document.body.addEventListener( "mousemove", mouseMove );
 	
-	setInterval( function(){ WmTimer() }, 33 );		//	33ms間隔でWmTimer()を呼び出すように指示 -> 1000 / 33fpsなのでおよそ30.3fps
+	setInterval( function(){ WmTimer() }, 33 );		//	33ms間隔でWmTimer()を呼び出すように指示 -> (1000 / 33)fpsなのでおよそ30.3fps
 	
 }
