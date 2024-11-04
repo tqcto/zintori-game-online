@@ -4,6 +4,11 @@ const	FONT			= "48px monospace";	//	使用フォント
 
 let		gFrame			= 0;				//	内部カウンタ
 
+var		mouseX;								//	マウスポインタのx座標
+var		mouseY;								//	マウスポインタのy座標
+
+var		angle			= 0;				//	中心点からマウスポインタへ向かう傾きから得る偏角
+
 let		canvas;								//	キャンバス
 let		g;
 
@@ -115,6 +120,15 @@ function makeMap() {
 	
 }
 
+function mouseMove(e) {
+	
+	mouseX	= e.pageX;
+	mouseY	= e.pageY;
+	
+	//console.log("mouse point : (" + mouseX + ", " + mouseY + ")");
+	
+}
+
 function drawMap() {
 	
 	for ( let y = 0; y < mapHeight; y++ ){
@@ -141,10 +155,31 @@ function drawMap() {
 
 function drawPlayer() {
 	
+	function rot(r) {
+		
+		ctx.translate( canvas.width / 2, canvas.height / 2 );		//	基準点を中心(w / 2, h / 2)にする
+		ctx.rotate( r );											//	回転
+		ctx.translate( -canvas.width / 2, -canvas.height / 2 );		//	基準点を原点(0, 0)に戻す
+		
+	}
+	
 	let ctx = playersCanvas[0].getContext( "2d" );
-	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	ctx.drawImage( player.GetImg(), player.GetX(), player.GetY(), playerImgSize * imgScale, playerImgSize * imgScale );
-	//ctx.rotate( 10 * Math.PI / 180 );
+	
+	rot(-angle);													//	前回の処理によるcanvasの回転角を0に初期化
+	
+	//	偏角がx軸正方向との成す角で用意したプレイヤー画像が上向きゆえPI / 2を足す必要がある
+	angle = Math.atan2( mouseY - canvas.height / 2, mouseX - canvas.width / 2 ) + Math.PI / 2;
+	
+	//	前描画データのクリア
+	ctx.clearRect(
+		-player.GetWidth() / 2 * imgScale, -player.GetHeight() / 2 * imgScale,
+		canvas.width, canvas.height
+	);
+	
+	rot(angle);
+	
+	//	プレイヤー画像の描画
+	ctx.drawImage( player.GetImg(), canvas.width / 2 - player.GetWidth() / 2 * imgScale, canvas.height / 2 - player.GetHeight() / 2 * imgScale, playerImgSize * imgScale, playerImgSize * imgScale );
 	
 }
 
@@ -153,9 +188,6 @@ function WmTimer(){
 	
 	gFrame++;						//内部カウンタを加算
 	//console.log(gFrame);
-	
-	g.font	= FONT;											//	文字フォントを設定
-	g.fillText( "Hello World!!", 0, 64 );
 	
 	drawMap();
 	drawPlayer();
@@ -196,6 +228,8 @@ window.onload = function() {
 	player					= new Player("img/player.png", playerImgSize, playerImgSize);
 	
 	makeMap();										//	マップデータの生成
+	
+	document.body.addEventListener( "mousemove", mouseMove );
 	
 	setInterval( function(){ WmTimer() }, 33 );		//	33ms間隔でWmTimer()を呼び出すように指示 -> 1000 / 33fpsなのでおよそ30.3fps
 	
