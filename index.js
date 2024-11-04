@@ -9,7 +9,6 @@ let		g;
 
 const	imgScale		= 3;				//	全画像の拡大率
 
-//let		mapImg;								//	マップの画像
 let		map;
 
 const	mapImgSize		= 12;				//	縦横それぞれ12ピクセルで1ブロック
@@ -17,13 +16,11 @@ var		mapArray		= [];
 const	mapWidth		= 100;				//	マップの横幅
 const	mapHeight		= 100;				//	マップの縦幅
 
-//let		playerImg;							//	プレイヤーの画像
 let		player;
 
-//let		playerX			= 0;				//	プレイヤーのx座標
-//let		playerY			= 0;				//	プレイヤーのy座標
-
 const	playerImgSize	= 20;				//	縦横それぞれ20ピクセル
+
+var		playersCanvas	= [];				//	各プレイヤーのキャンバスの配列
 
 class imgBase {
 	
@@ -144,14 +141,10 @@ function drawMap() {
 
 function drawPlayer() {
 	
-	//g.drawImage( player.GetImg(), playerX, playerY, playerImgSize * imgScale, playerImgSize * imgScale );
-	g.drawImage(
-		player.GetImg(),
-		player.GetX(), player.GetY(),
-		playerImgSize * imgScale, playerImgSize * imgScale
-	);
-	
-	//g.rotate( 45 * Math.PI / 180 );
+	let ctx = playersCanvas[0].getContext( "2d" );
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ctx.drawImage( player.GetImg(), player.GetX(), player.GetY(), playerImgSize * imgScale, playerImgSize * imgScale );
+	//ctx.rotate( 10 * Math.PI / 180 );
 	
 }
 
@@ -160,8 +153,6 @@ function WmTimer(){
 	
 	gFrame++;						//内部カウンタを加算
 	//console.log(gFrame);
-	
-	g.imageSmoothingEnabled = g.msImageSmoothingEnabled	= 0;	//	ドットをくっきり表示させる
 	
 	g.font	= FONT;											//	文字フォントを設定
 	g.fillText( "Hello World!!", 0, 64 );
@@ -183,17 +174,26 @@ window.onload = function() {
 	canvas.height	= window.innerHeight;			//	キャンバスの高さをウィンドウの高さへ変更
 	
 	g				= canvas.getContext( "2d" );			//	2D描画コンテキストを取得
+	g.imageSmoothingEnabled = g.msImageSmoothingEnabled	= 0;	//	ドットをくっきり表示させる
 	
-	//	画像クラスの作成
-	//mapImg			= new Image();
-	//playerImg		= new Image();
-	
-	/*
-	mapImg.src		= "img/tiles.png";					//	マップ画像読み込み
-	playerImg.src	= "img/player.png";					//	プレイヤー画像読み込み
-	*/
 	map				= new Map("img/tiles.png", mapImgSize, mapImgSize);
-	player			= new Player("img/player.png", playerImgSize, playerImgSize);
+	
+	playersCanvas.push( document.createElement( 'canvas' ) );	//	メインプレイヤー用のキャンバスの作成
+	playersCanvas[0].width	= window.innerWidth;
+	playersCanvas[0].height	= window.innerHeight;
+	playersCanvas[0].id = 'MainPlayer';
+	
+	playersCanvas[0].style.position = 'absolute';
+	playersCanvas[0].style.left = canvas.offsetLeft + 'px';
+	playersCanvas[0].style.top = canvas.offsetTop + 'px';
+	playersCanvas[0].style.backgroundColor = 'transparent';
+	playersCanvas[0].getContext("2d").fillStyle = 'rgba(255, 0, 0, 0.5)';
+	
+	playersCanvas[0].getContext("2d").imageSmoothingEnabled = g.msImageSmoothingEnabled	= 0;
+	
+	document.body.appendChild(playersCanvas[0]);
+	
+	player					= new Player("img/player.png", playerImgSize, playerImgSize);
 	
 	makeMap();										//	マップデータの生成
 	
