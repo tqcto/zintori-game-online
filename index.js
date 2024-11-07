@@ -2,6 +2,9 @@
 
 const	FONT			= "48px monospace";	//	使用フォント
 const	PLAYER_VEROCITY	= 0.5;				//	プレイヤーの速度
+const	IMG_SCALE		= 3;				//	全画像の拡大率
+
+var		isStop			= false;			//	画面の停止フラグ(デバッグ用)
 
 let		gFrame			= 0;				//	内部カウンタ
 
@@ -13,14 +16,12 @@ var		angle			= 0;				//	中心点からマウスポインタへ向かう傾き�
 let		canvas;								//	キャンバス
 let		g;
 
-const	imgScale		= 3;				//	全画像の拡大率
-
 let		mapImg;								//	マップの画像
 var		mapX			= 0;
 var		mapY			= 0;
 
 const	mapImgSize		= 12;				//	縦横それぞれ12ピクセルで1ブロック
-var		mapArray		= [];
+var		mapArray		= [];				//	マップデータ
 const	mapWidth		= 100;				//	マップの横幅
 const	mapHeight		= 100;				//	マップの縦幅
 
@@ -50,30 +51,50 @@ function mouseMove(e) {
 	
 }
 
-function drawMap() {
+function arrayIdX2virtualX( x ) {
 	
-	for ( let y = 0; y < mapHeight; y++ ){
-		for ( let x = 0; x < mapWidth; x++ ){
-			
-			const blockId		= mapArray[x + y * mapWidth];	//	(x,y)の位置におけるブロックIDの取得
-			
-			const xCutBlock		= blockId * mapImgSize;
-			const yCutBlock		= blockId * mapImgSize;
-			
-			const cx			= -playerX + x;
-			const cy			= -playerY + y;
-			
-			const xDrawBlock	= cx * mapImgSize * imgScale;
-			const yDrawBlock	= cy * mapImgSize * imgScale;
-			
-			g.drawImage(
-				mapImg,
-				xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
-				xDrawBlock, yDrawBlock, mapImgSize * imgScale, mapImgSize * imgScale				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
-			);
-			
-		}
+	const cx			= x - playerX;					//	プレイヤーの位置へ座標変換
+	return cx * mapImgSize * IMG_SCALE  - ( playerX - ( canvas.width / 2 ) ) - mapImgSize * IMG_SCALE / 2;
+	
+}
+function arrayIdY2virtualY( y ) {
+	
+	const cy			= y - playerY;					//	プレイヤーの位置へ座標変換
+	return cy * mapImgSize * IMG_SCALE  - ( playerY - ( canvas.height / 2 ) ) - mapImgSize * IMG_SCALE / 2;
+	
+}
+
+function virtualX2arrayIdX( x ) {
+	
+	return ( ( 2 * ( x + playerX ) - canvas.width ) / ( 2 * mapImgSize * IMG_SCALE ) ) + ( 1 / 2 ) + playerX;
+	
+}
+function virtualY2arrayIdY( y ) {
+	
+	return ( ( 2 * ( y + playerY ) - canvas.height ) / ( 2 * mapImgSize * IMG_SCALE ) ) + ( 1 / 2 ) + playerY;
+	
+}
+
+//	プレイヤーのいる場所のブロックを塗る
+function paintMap() {
+	
+	const bx = virtualX2arrayIdX(canvas.width / 2);		//	実際にプレイヤーが描画されているのはcanvasのど真ん中ゆえ
+	const by = virtualY2arrayIdY(canvas.height / 2);	//	実際にプレイヤーが描画されているのはcanvasのど真ん中ゆえ
+	
+	mapArray[ parseInt(bx) + parseInt(by) * mapWidth ] = 2;
+	
+	/*
+	if ( 0 <= playerX && playerX < mapWidth * mapImgSize * IMG_SCALE && 0 <= playerY && playerY < mapHeight * mapImgSize * IMG_SCALE ) {
+		
+		
+		
+console.log( "(bx, by) = " + parseInt(bx + 0.5, 10) + ", " + parseInt(by + 0.5, 10) );
+		mapArray[ parseInt(bx + 0.5, 10) + parseInt(by + 0.5, 10) * mapWidth ] = 2;
+		
+		//g.fillRect( xDrawBlock - 1, yDrawBlock - 1, xDrawBlock + 1, yDrawBlock + 1 );
+		
 	}
+	*/
 	
 }
 
@@ -101,14 +122,12 @@ function drawPlayer() {
 	var newx	= playerX + PLAYER_VEROCITY * Math.cos(angle);
 	var newy	= playerY + PLAYER_VEROCITY * Math.sin(angle);
 	
-	console.log("x : " + angle);
-	
 	playerX		= playerX + PLAYER_VEROCITY * Math.cos(angle);
 	playerY		= playerY + PLAYER_VEROCITY * Math.sin(angle);
 	
 	//	前描画データのクリア
 	ctx.clearRect(
-		-playerImgSize / 2 * imgScale, -playerImgSize / 2 * imgScale,
+		-playerImgSize / 2 * IMG_SCALE, -playerImgSize / 2 * IMG_SCALE,
 		canvas.width, canvas.height
 	);
 	
@@ -117,22 +136,94 @@ function drawPlayer() {
 	rot(angle);
 	
 	//	プレイヤー画像の描画
-	ctx.drawImage( playerImg, canvas.width / 2 - playerImgSize / 2 * imgScale, canvas.height / 2 - playerImgSize / 2 * imgScale, playerImgSize * imgScale, playerImgSize * imgScale );
+	ctx.drawImage( playerImg, (canvas.width / 2) - (playerImgSize / 2) * IMG_SCALE, (canvas.height / 2) - (playerImgSize / 2) * IMG_SCALE, playerImgSize * IMG_SCALE, playerImgSize * IMG_SCALE );
+	
+}
+
+function drawMap() {
+	
+	//	前描画データのクリア
+	g.clearRect( 0, 0, canvas.width, canvas.height );
+	
+	
+	
+	for ( let y = 0; y < mapHeight; y++ ){
+		for ( let x = 0; x < mapWidth; x++ ){
+			
+			const blockId		= mapArray[x + y * mapWidth];	//	(x,y)の位置におけるブロックIDの取得
+			
+			const xCutBlock		= blockId * mapImgSize;			//	カットする画像の開始点のx座標
+			const yCutBlock		= 0;							//	カットする画像の開始点のy座標
+			
+			const xDrawBlock	= arrayIdX2virtualX(x);
+			const yDrawBlock	= arrayIdY2virtualY(y);
+			
+			g.drawImage(
+				mapImg,
+				xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
+				xDrawBlock, yDrawBlock, mapImgSize * IMG_SCALE, mapImgSize * IMG_SCALE				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
+			);
+			
+		}
+	}
+	
+	/*
+	const startX = playerX - canvas.width / 2;
+	const startY = playerY - canvas.height / 2;
+	
+	for ( let y = startY; y < startY + canvas.height / (mapImgSize * IMG_SCALE) + 1; y++ ){
+		for ( let x = startX; x < startX + canvas.width / (mapImgSize * IMG_SCALE) + 1; x++ ){
+			
+			if ( 0 <= x && x < mapWidth && 0 <= y && y < mapHeight ) {
+				
+				const blockId		= mapArray[x + y * mapWidth];	//	(x,y)の位置におけるブロックIDの取得
+				
+				const xCutBlock		= blockId * mapImgSize;
+				const yCutBlock		= blockId * mapImgSize;
+				
+				const cx			= x - startX;
+				const cy			= y - startY;
+				
+				const xDrawBlock	= cx * mapImgSize * IMG_SCALE;
+				const yDrawBlock	= cy * mapImgSize * IMG_SCALE;
+				
+				g.drawImage(
+					mapImg,
+					xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
+					xDrawBlock, yDrawBlock, mapImgSize * IMG_SCALE, mapImgSize * IMG_SCALE				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
+				);
+				
+			}
+			
+		}
+	}
+	*/
 	
 }
 
 //タイマーイベント発生時の処理
 function WmTimer(){
 	
-	gFrame++;						//内部カウンタを加算
-	//console.log(gFrame);
+	if (isStop == false) {
+		
+		gFrame++;						//内部カウンタを加算
+		//console.log(gFrame);
+		
+		drawPlayer();
+		paintMap();
+		drawMap();
+		
+		g.fillText("player point : (" + playerX + ", " + playerY + ")", 10, 10);
+		
+		//console.log("plater point : (x, y) = (" + player.GetX() + ", " + player.GetY() + ")");
+		
+	}
 	
-	drawPlayer();
-	drawMap();
+}
+
+window.onclick = function(e) {
 	
-	g.fillText("player point : (" + playerX + ", " + playerY + ")", 10, 10);
-	
-	//console.log("plater point : (x, y) = (" + player.GetX() + ", " + player.GetY() + ")");
+	isStop = !isStop;
 	
 }
 
