@@ -87,6 +87,15 @@ function mouseMove(e) {
 }
 
 /*
+仮想xy空間座標を配列における座標へ変換 ( x成分、y成分ともにこの関数のみで対応 )
+*/
+function virtual2array( x_or_y ) {
+	
+	return parseInt( x_or_y / (mapImgSize * imgScale) + 0.5 );
+	
+}
+
+/*
 配列における座標を仮想xy空間座標へ変換 ( x成分、y成分ともにこの関数のみで対応 )
 */
 function array2virtual( x_or_y ) {
@@ -261,6 +270,7 @@ function drawMap() {
 	//	前描画データのクリア
 	g.clearRect( 0, 0, canvas.width, canvas.height );
 	
+	/*
 	for ( let y = 0; y < mapHeight; y++ ){
 		for ( let x = 0; x < mapWidth; x++ ){
 			
@@ -280,46 +290,44 @@ function drawMap() {
 			
 		}
 	}
+	*/
 	
-	/*
-	const startX	= playerX - (canvas.width / 2);
-	const startY	= playerY - (canvas.height / 2);
+	//	キャンバス内で描画可能なブロックの数
+	const endx = parseInt( ( canvas.width / (mapImgSize * imgScale) ) + 1 + 0.5 );
+	const endy = parseInt( ( canvas.height / (mapImgSize * imgScale) ) + 1 + 0.5 );
 	
-	const endX		= ( canvas.width / (mapImgSize * imgScale) ) + 1;
-	const endY		= ( canvas.height / (mapImgSize * imgScale) ) + 1;
-	
-	for ( let y = startY; y < endY; y++ ) {
-		for ( let x = startX; x < endX; x++ ) {
+	//	配列座標単位でループ
+	for ( let y = 0; y < endy; y++ ) {
+		for ( let x = 0; x < endx; x++ ) {
 			
-			const bx = parseInt(virtualX2arrayIdX(x));
-			const by = parseInt(virtualY2arrayIdY(y));
+			const ax			= x + virtual2array( playerX ) - endx / 2;
+			const ay			= y + virtual2array( playerY ) - endy / 2;
 			
-			if ( 0 <= bx && bx < mapWidth * mapImgSize * imgScale && 0 <= by && by < mapHeight * mapImgSize * imgScale ) {
+			var blockId			= 0x01;
+			
+			if ( 0 <= ax && ax < mapWidth && 0 <= ay && ay < mapHeight ) {
 				
-console.log("(bx, by) = (" + bx + ", " + by + ")");
-				
-				const blockId		= mapArray[ bx + by * mapWidth ];
-				
-				const xCutBlock		= blockId * mapImgSize;			//	カットする画像の開始点のx座標
-				const yCutBlock		= 0;							//	カットする画像の開始点のy座標
-				
-				const qx = x / (mapImgSize * imgScale);
-				const qy = y / (mapImgSize * imgScale);
-				
-				const dx			= x * mapImgSize * imgScale - playerX;//arrayIdX2virtualX(bx);
-				const dy			= y * mapImgSize * imgScale - playerY;//arrayIdY2virtualY(by);
-				
-				g.drawImage(
-					mapImg,
-					xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
-					dx, dy, mapImgSize * imgScale, mapImgSize * imgScale				//	切り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
-				);
+				blockId = mapArray[ ax + ay * mapWidth ];
 				
 			}
 			
+			const xCutBlock		= blockId * mapImgSize;			//	カットする画像の開始点のx座標
+			const yCutBlock		= 0;							//	カットする画像の開始点のy座標
+			
+			const vx			= array2virtual( ax );
+			const vy			= array2virtual( ay );
+			
+			const xDrawBlock	= setCameraX2CanvasCenterX( getPointInCameraX( vx ) );
+			const yDrawBlock	= setCameraY2CanvasCenterY( getPointInCameraY( vy ) );
+			
+			g.drawImage(
+				mapImg,
+				xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
+				xDrawBlock, yDrawBlock, mapImgSize * imgScale, mapImgSize * imgScale				//	切り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
+			);
+			
 		}
 	}
-	*/
 	
 }
 
