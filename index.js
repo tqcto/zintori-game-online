@@ -30,6 +30,11 @@ let		playerImg;							//	プレイヤーの画像
 var		playerX			= 0;
 var		playerY			= 0;
 
+var		numberOfPlayer	= 2;				//	プレイヤーの数
+var		playersColor	= [];				//	各プレイヤーの色の配列
+var		player1X		= 0;				//	プレイヤー1のx座標
+var		player1Y		= 0;				//	プレイヤー1のy座標
+
 const	playerImgSize	= 20;				//	縦横それぞれ20ピクセル
 
 var		playersCanvas	= [];				//	各プレイヤーのキャンバスの配列
@@ -39,6 +44,32 @@ function makeMap() {
 	//	ブロックIDの書き込み
 	for ( let i = 0; i < mapWidth * mapHeight; i++ ) {
 		mapArray.push( 0 );
+	}
+	
+}
+
+function initializePlayersParameter() {
+	
+	for ( let i = 0; i < numberOfPlayer; i++ ) {
+		
+		const init_x_i	= Math.random() * mapWidth;
+		const init_y_i	= Math.random() * mapHeight;
+		
+		console.log( "[player " + i + "] initialize = (" + init_x_i + ", " + init_y_i + ")" );
+		
+		if ( i == 0 ) {
+			
+			playerX			= init_x_i;
+			playerY			= init_y_i;
+			
+		}
+		else {
+			
+			player1X		= init_x_i;
+			player1Y		= init_y_i;
+			
+		}
+		
 	}
 	
 }
@@ -177,7 +208,7 @@ function drawMap() {
 			g.drawImage(
 				mapImg,
 				xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
-				xDrawBlock, yDrawBlock, mapImgSize * imgScale, mapImgSize * imgScale				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
+				xDrawBlock, yDrawBlock, mapImgSize * imgScale, mapImgSize * imgScale				//	切り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
 			);
 			
 		}
@@ -214,7 +245,7 @@ console.log("(bx, by) = (" + bx + ", " + by + ")");
 				g.drawImage(
 					mapImg,
 					xCutBlock, yCutBlock, mapImgSize, mapImgSize,	//	元画像の		(blockId * mapImgSize, blockId * mapImgSize)の位置から	mapImgSize * mapImgSize	の範囲を切り取る
-					dx, dy, mapImgSize * imgScale, mapImgSize * imgScale				//	入り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
+					dx, dy, mapImgSize * imgScale, mapImgSize * imgScale				//	切り取った画像を(x * mapImgSize, y * mapImgSize)			の位置から	mapImgSize * mapImgSize	の範囲で描画する
 				);
 				
 			}
@@ -328,6 +359,7 @@ window.onload = function() {
 	playerY			= 0;
 	
 	makeMap();										//	マップデータの生成
+	initializePlayersParameter();					//	全プレイヤーのパラメータを設定
 	
 	document.body.addEventListener( "mousemove", mouseMove );
 	
