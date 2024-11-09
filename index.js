@@ -87,6 +87,15 @@ function mouseMove(e) {
 }
 
 /*
+配列における座標を仮想xy空間座標へ変換 ( x成分、y成分ともにこの関数のみで対応 )
+*/
+function array2virtual( x_or_y ) {
+	
+	return x_or_y * mapImgSize * imgScale;
+	
+}
+
+/*
 仮想xy空間座標(x, y)に対応するマップデータ配列のブロックIDを取得
 */
 function getBlockId( x, y ) {
@@ -189,7 +198,13 @@ function drawPlayer() {
 	rot(angle);
 	
 	//	プレイヤー画像の描画
-	ctx.drawImage( playerImg, (canvas.width / 2) - (playerImgSize / 2) * imgScale, (canvas.height / 2) - (playerImgSize / 2) * imgScale, playerImgSize * imgScale, playerImgSize * imgScale );
+	ctx.drawImage(
+		playerImg,
+		(canvas.width / 2) - (playerImgSize / 2) * imgScale,
+		(canvas.height / 2) - (playerImgSize / 2) * imgScale,
+		playerImgSize * imgScale,
+		playerImgSize * imgScale
+	);
 	
 }
 
@@ -223,6 +238,24 @@ function getPointInCameraY( y ) {
 	
 }
 
+/*
+カメラ画面内でのx座標をキャンバスの中心のx座標へ変換
+*/
+function setCameraX2CanvasCenterX( x ) {
+	
+	return x + canvas.width / 2;
+	
+}
+
+/*
+カメラ画面内でのy座標をキャンバスの中心のy座標へ変換
+*/
+function setCameraY2CanvasCenterY( y ) {
+	
+	return y + canvas.height / 2;
+	
+}
+
 function drawMap() {
 	
 	//	前描画データのクリア
@@ -236,8 +269,8 @@ function drawMap() {
 			const xCutBlock		= blockId * mapImgSize;			//	カットする画像の開始点のx座標
 			const yCutBlock		= 0;							//	カットする画像の開始点のy座標
 			
-			const xDrawBlock	= getPointInCameraX( x * mapImgSize * imgScale ) + canvas.width / 2;//arrayIdX2virtualX(x);
-			const yDrawBlock	= getPointInCameraY( y * mapImgSize * imgScale ) + canvas.height / 2;//arrayIdY2virtualY(y);
+			const xDrawBlock	= setCameraX2CanvasCenterX( getPointInCameraX( array2virtual(x) ) );
+			const yDrawBlock	= setCameraY2CanvasCenterY( getPointInCameraY( array2virtual(y) ) );
 			
 			g.drawImage(
 				mapImg,
