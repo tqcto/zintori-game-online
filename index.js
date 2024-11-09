@@ -1,7 +1,7 @@
 "use strict"; //エラー防止用
 
 const	FONT			= "48px monospace";	//	使用フォント
-const	PLAYER_VEROCITY	= 0.5;				//	プレイヤーの速度
+const	PLAYER_VEROCITY	= 15;				//	プレイヤーの速度
 
 var		isStop			= false;			//	画面の停止フラグ(デバッグ用)
 
@@ -39,6 +39,9 @@ const	playerImgSize	= 20;				//	縦横それぞれ20ピクセル
 
 var		playersCanvas	= [];				//	各プレイヤーのキャンバスの配列
 
+var		cameraCenterX	= 0;				//	カメラの中心座標のx成分
+var		cameraCenterY	= 0;				//	カメラの中心座標のy成分
+
 function makeMap() {
 	
 	//	ブロックIDの書き込み
@@ -52,8 +55,8 @@ function initializePlayersParameter() {
 	
 	for ( let i = 0; i < numberOfPlayer; i++ ) {
 		
-		const init_x_i	= Math.random() * mapWidth;
-		const init_y_i	= Math.random() * mapHeight;
+		const init_x_i	= Math.random() * mapWidth	* mapImgSize * imgScale;
+		const init_y_i	= Math.random() * mapHeight	* mapImgSize * imgScale;
 		
 		console.log( "[player " + i + "] initialize = (" + init_x_i + ", " + init_y_i + ")" );
 		
@@ -83,33 +86,44 @@ function mouseMove(e) {
 	
 }
 
-function arrayIdX2virtualX( x ) {
+/*
+仮想xy空間座標(x, y)に対応するマップデータ配列のブロックIDを取得
+*/
+function getBlockId( x, y ) {
 	
-	const cx			= x - playerX;					//	プレイヤーの位置へ座標変換
-	return cx * mapImgSize * imgScale  - ( playerX - ( canvas.width / 2 ) ) - mapImgSize * imgScale / 2;
+	const arrayX			= parseInt( x / (mapImgSize * imgScale) );
+	const arrayY			= parseInt( y / (mapImgSize * imgScale) );
 	
-}
-function arrayIdY2virtualY( y ) {
+	if ( 0 <= arrayX && arrayX < mapWidth && 0 <= arrayY && arrayY < mapHeight ) {
+		
+		return mapArray[ arrayX + arrayY * mapWidth ];
+		
+	}
 	
-	const cy			= y - playerY;					//	プレイヤーの位置へ座標変換
-	return cy * mapImgSize * imgScale  - ( playerY - ( canvas.height / 2 ) ) - mapImgSize * imgScale / 2;
+	return 0x01;	//	座標がマップデータの外にある場合ID=0x01のブロックIDを返す
 	
 }
 
-function virtualX2arrayIdX( x ) {
+/*
+仮想xy空間座標(x, y)に対応するマップデータ配列のブロックIDを設定
+*/
+function setBlockId( x, y, id ) {
 	
-	return ( ( 2 * ( x + playerX ) - canvas.width ) / ( 2 * mapImgSize * imgScale ) ) + ( 1 / 2 ) + playerX;
+	const arrayX			= parseInt( x / (mapImgSize * imgScale) );
+	const arrayY			= parseInt( y / (mapImgSize * imgScale) );
 	
-}
-function virtualY2arrayIdY( y ) {
-	
-	return ( ( 2 * ( y + playerY ) - canvas.height ) / ( 2 * mapImgSize * imgScale ) ) + ( 1 / 2 ) + playerY;
+	if ( 0 <= arrayX && arrayX < mapWidth && 0 <= arrayY && arrayY < mapHeight ) {
+		
+		mapArray[ arrayX + arrayY * mapWidth ] = id;
+		
+	}
 	
 }
 
 //	プレイヤーのいる場所のブロックを塗る
 function paintMap() {
 	
+	/*
 	const bx = parseInt(virtualX2arrayIdX(canvas.width / 2));		//	実際にプレイヤーが描画されているのはcanvasのど真ん中ゆえ
 	const by = parseInt(virtualY2arrayIdY(canvas.height / 2));	//	実際にプレイヤーが描画されているのはcanvasのど真ん中ゆえ
 	
@@ -118,19 +132,9 @@ function paintMap() {
 		mapArray[ bx + by * mapWidth ] = 2;
 		
 	}
-	
-	/*
-	if ( 0 <= playerX && playerX < mapWidth * mapImgSize * imgScale && 0 <= playerY && playerY < mapHeight * mapImgSize * imgScale ) {
-		
-		
-		
-console.log( "(bx, by) = " + parseInt(bx + 0.5, 10) + ", " + parseInt(by + 0.5, 10) );
-		mapArray[ parseInt(bx + 0.5, 10) + parseInt(by + 0.5, 10) * mapWidth ] = 2;
-		
-		//g.fillRect( xDrawBlock - 1, yDrawBlock - 1, xDrawBlock + 1, yDrawBlock + 1 );
-		
-	}
 	*/
+	
+	setBlockId(playerX, playerY, 0x02);
 	
 }
 
@@ -189,6 +193,36 @@ function drawPlayer() {
 	
 }
 
+/*
+カメラの中心座標を仮想xy空間の点(x, y)に設定
+*/
+function setCamera( x, y ) {
+	
+	cameraCenterX = x;
+	cameraCenterY = y;
+	
+}
+
+/*
+仮想xy空間のx座標からカメラ画面内でのx座標へ変換
+[in] x	: virtual x
+*/
+function getPointInCameraX( x ) {
+	
+	return x - cameraCenterX;
+	
+}
+
+/*
+仮想xy空間のy座標からカメラ画面内でのy座標へ変換
+[in] y	: virtual y
+*/
+function getPointInCameraY( y ) {
+	
+	return y - cameraCenterY;
+	
+}
+
 function drawMap() {
 	
 	//	前描画データのクリア
@@ -202,8 +236,8 @@ function drawMap() {
 			const xCutBlock		= blockId * mapImgSize;			//	カットする画像の開始点のx座標
 			const yCutBlock		= 0;							//	カットする画像の開始点のy座標
 			
-			const xDrawBlock	= arrayIdX2virtualX(x);
-			const yDrawBlock	= arrayIdY2virtualY(y);
+			const xDrawBlock	= getPointInCameraX( x * mapImgSize * imgScale ) + canvas.width / 2;//arrayIdX2virtualX(x);
+			const yDrawBlock	= getPointInCameraY( y * mapImgSize * imgScale ) + canvas.height / 2;//arrayIdY2virtualY(y);
 			
 			g.drawImage(
 				mapImg,
@@ -303,6 +337,7 @@ function WmTimer(){
 		//console.log(gFrame);
 		
 		drawPlayer();
+		setCamera(playerX, playerY);
 		paintMap();
 		drawMap();
 		
